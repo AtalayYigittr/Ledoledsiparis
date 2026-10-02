@@ -8,6 +8,8 @@ Ledolet sipariş formunu tarayıcıda doldurup A5 PDF olarak indirmeye yarayan t
 - K.D.V. oranı seçilebilir (%20 / %10 / %1 / yok)
 - Sıralı sipariş numarası: PDF indirildiğinde numara kullanılmış sayılır, "Yeni form" bir sonrakini açar
 - Taslak ve sayaç tarayıcının yerel hafızasında (localStorage) saklanır
+- Ünvan, adres, yetkili, mail ve GSM yeni formda otomatik dolar; istenirse silinip değiştirilebilir
+- Birim fiyatlar KDV hariç girilir; Genel Toplam'a KDV eklenir
 - Kaşe/imza alanı boş bırakılır (ıslak imza için)
 
 ## Kurulum (GitHub Pages)
@@ -21,4 +23,5 @@ Ledolet sipariş formunu tarayıcıda doldurup A5 PDF olarak indirmeye yarayan t
 ## Notlar
 - Numara sayacı **her tarayıcıda ayrı** tutulur. Farklı bilgisayarlardan kullanılacaksa ortak bir sayaç (ör. Google Apps Script + Sheets) eklenmelidir.
 - Firma adresi, telefon ve e-posta `index.html` içindeki `COMPANY` sabitinden değiştirilebilir.
+- Otomatik dolan müşteri bilgileri `index.html` içindeki `DEFAULTS` sabitinden değiştirilebilir.
 - Harici kütüphaneler: html2canvas 1.4.1 ve jsPDF 2.5.1 (cdnjs üzerinden).

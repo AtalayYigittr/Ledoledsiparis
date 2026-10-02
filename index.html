@@ -171,7 +171,7 @@ table.items tr:last-child td{border-bottom:0}
       <h2 class="urun">ÜRÜN BİLGİLERİ</h2>
       <table class="items" aria-label="Ürün satırları">
         <colgroup><col class="c-model"><col class="c-qty"><col class="c-price"><col class="c-total"></colgroup>
-        <thead><tr><th>Cinsi</th><th>Miktarı</th><th>Birim Fiyatı</th><th>TUTARI</th></tr></thead>
+        <thead><tr><th>Cinsi</th><th>Miktarı</th><th>Birim Fiyatı<br><span style="font-weight:400;font-size:8.5px">(KDV hariç)</span></th><th>TUTARI</th></tr></thead>
         <tbody id="rows"></tbody>
       </table>
 
@@ -206,6 +206,14 @@ const COMPANY = {
   address: "Parseller Mahallesi Abdullah Azam Caddesi No:9 Ümraniye - İST.",
   tel: "0531 345 01 31",
   mail: "info@ledolet.com"
+};
+/* ---- Yeni formda otomatik dolan alanlar (silip değiştirebilirsiniz) ---- */
+const DEFAULTS = {
+  unvan: "Lorentz Elektronik ve DTM Şti.",
+  adres: "Hürriyet Mh. Atatürk Cd. Yılmaz İş Mrk. No: 13-15E Kat:2/17 Bağcılar / İstanbul",
+  yetkili: "Berke Erdoğan",
+  mail: "berke@lorentz.com.tr",
+  gsm: "0553 852 3753"
 };
 const ROW_COUNT = 20;
 const DRAFT_KEY = "ledolet-siparis-draft-v1";
@@ -276,7 +284,7 @@ function collect(){
     const g = k => sheet.querySelector('[data-r="'+i+'"][data-k="'+k+'"]').value;
     rows.push({model:g("model"),qty:g("qty"),price:g("price")});
   }
-  return {fields, rows, disc:disc.value, kdv:kdvSel.value, no:currentNo, manualNo, claimedNo};
+  return {fields, rows, disc:disc.value, kdv:kdvSel.value, no:currentNo, manualNo, claimedNo, defaultsV:1};
 }
 function apply(d){
   sheet.querySelectorAll(".fi[data-f]").forEach(el=>el.value=(d.fields&&d.fields[el.dataset.f])||"");
@@ -288,6 +296,12 @@ function apply(d){
 }
 let saveT;
 function saveDraft(){ clearTimeout(saveT); saveT = setTimeout(()=>{ try{localStorage.setItem(DRAFT_KEY,JSON.stringify(collect()))}catch(e){} },300); }
+function fillDefaults(onlyEmpty){
+  Object.keys(DEFAULTS).forEach(k=>{
+    const el = sheet.querySelector('[data-f="'+k+'"]');
+    if(el && (!onlyEmpty || !el.value.trim())) el.value = DEFAULTS[k];
+  });
+}
 function today(){ const d=new Date(); return String(d.getDate()).padStart(2,"0")+"."+String(d.getMonth()+1).padStart(2,"0")+"."+d.getFullYear(); }
 
 function setNo(n){ currentNo = n; noText.textContent = pad(n); if(document.activeElement!==noInput) noInput.value = pad(n); }
@@ -385,14 +399,15 @@ pdfBtn.addEventListener("click", async ()=>{
 });
 
 $("#newBtn").addEventListener("click", ()=>{
-  const hasData = collect().rows.some(r=>r.model||r.qty||r.price) || (sheet.querySelector('[data-f="unvan"]').value||"").trim();
+  const hasData = collect().rows.some(r=>r.model||r.qty||r.price);
   if(hasData && claimedNo===null && !confirm("Bu form henüz indirilmedi. Yine de temizlensin mi?")) return;
   apply({kdv:kdvSel.value});
+  fillDefaults(false);
   sheet.querySelector('[data-f="siparisTarihi"]').value = today();
   manualNo = false; claimedNo = null;
   const base = Math.max(lastNo, localLast());
   setNo(base+1); recalc(); saveDraft(); setStatus("");
-  sheet.querySelector('[data-f="unvan"]').focus();
+  sheet.querySelector('[data-r="0"][data-k="model"]').focus();
 });
 
 /* ---- Ekrana sığdır ---- */
@@ -407,8 +422,11 @@ window.addEventListener("resize", fit);
 
 /* ---- Başlat ---- */
 let draft = null; try{ draft = JSON.parse(localStorage.getItem(DRAFT_KEY)||"null") }catch(e){}
-if(draft){ apply(draft); manualNo = !!draft.manualNo; claimedNo = draft.claimedNo ?? null; setNo(draft.no||1); }
-else { sheet.querySelector('[data-f="siparisTarihi"]').value = today(); setNo(1); }
+if(draft){
+  apply(draft); manualNo = !!draft.manualNo; claimedNo = draft.claimedNo ?? null; setNo(draft.no||1);
+  if(!draft.defaultsV){ fillDefaults(true); saveDraft(); }
+}
+else { fillDefaults(false); sheet.querySelector('[data-f="siparisTarihi"]').value = today(); setNo(1); }
 onLast(localLast());
 recalc(); fit();
 
