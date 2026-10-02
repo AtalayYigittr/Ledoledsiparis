@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ledolet Sipariş Sözleşmesi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Courier+Prime:wght@700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --desk:#d9dcdf; --bar:#2b3138; --bar-ink:#f3f4f5; --bar-muted:#a9b1ba;
+  --ink:#222; --paper:#fff; --red:#d2262f; --line:#555; --accent:#2f7d5b;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --desk:#1d2125; --bar:#111418; --bar-ink:#eceef0; --bar-muted:#8d959e; }
+}
+:root[data-theme="dark"]{ --desk:#1d2125; --bar:#111418; --bar-ink:#eceef0; --bar-muted:#8d959e; }
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--desk);font-family:"Open Sans",Arial,Helvetica,sans-serif;color:var(--ink)}
+
+/* Toolbar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--bar);color:var(--bar-ink);
+  display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;padding:10px 18px}
+.bar .grp{display:flex;align-items:center;gap:8px;font-size:13px}
+.bar label{color:var(--bar-muted)}
+.bar select,.bar input{font:inherit;font-size:13px;border:1px solid #4a525b;background:#1f242a;color:var(--bar-ink);border-radius:4px;padding:5px 7px}
+.bar input.noin{width:92px;font-family:"Courier Prime",monospace;font-weight:700;color:#ff7b82}
+.spacer{flex:1}
+.btn{font:inherit;font-size:13px;font-weight:600;border-radius:4px;padding:8px 14px;cursor:pointer;border:1px solid #4a525b;background:transparent;color:var(--bar-ink)}
+.btn:hover{background:#3a414a}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:#286c4f}
+.btn:disabled{opacity:.55;cursor:wait}
+.btn:focus-visible,.bar input:focus-visible,.bar select:focus-visible{outline:2px solid #8fd3b4;outline-offset:2px}
+.status{font-size:12px;color:var(--bar-muted);min-height:1em}
+.status.ok{color:#8fd3b4}.status.err{color:#ff9ba0}
+
+/* Stage + paper */
+.stage{padding:28px 12px 60px;display:flex;justify-content:center;overflow-x:auto}
+.scaler{transform-origin:top left}
+.sheet{width:700px;height:990px;background:var(--paper);color:var(--ink);position:relative;
+  box-shadow:0 1px 2px rgba(0,0,0,.18),0 10px 30px rgba(0,0,0,.18);padding:30px 34px 26px;display:flex;flex-direction:column}
+
+.top{display:grid;grid-template-columns:auto 1fr auto;align-items:start;gap:0 14px}
+.logo{font-family:"Open Sans",Arial,sans-serif;font-weight:400;font-size:34px;letter-spacing:.5px;color:#9a9a9a;line-height:1}
+.company{font-size:8.6px;color:#8a8a8a;line-height:1.45;margin-top:5px;white-space:nowrap}
+.no{font-family:"Courier Prime","Courier New",monospace;font-weight:700;color:var(--red);font-size:24px;padding-top:2px;padding-left:8px;white-space:nowrap}
+.no small{font-family:"Open Sans",sans-serif;font-size:17px;margin-right:6px}
+.title{text-align:right}
+.title h1{margin:0;font-size:15px;font-weight:700;letter-spacing:.2px}
+.title .sd{font-size:11px;margin-top:10px;display:flex;align-items:baseline;gap:4px;justify-content:flex-end}
+
+.fields{margin-top:12px;font-size:10.5px}
+.frow{display:flex;gap:10px;align-items:baseline;margin-top:5px}
+.f{display:flex;align-items:baseline;gap:4px;min-width:0}
+.f > span.l{white-space:nowrap}
+.fi{flex:1;min-width:0;border:0;border-bottom:1px dotted #777;font:inherit;font-size:11px;padding:1px 2px;background:transparent;color:#103a8a;outline:none}
+.fi:focus{background:#eef5ff}
+.grow{flex:1}
+
+h2.urun{font-size:12px;margin:12px 0 4px;font-weight:700}
+table.items{width:100%;border-collapse:collapse;border:1.3px solid var(--line);table-layout:fixed;font-size:11px}
+table.items th{font-weight:700;font-size:11.5px;padding:4px 4px;border-left:1.3px solid var(--line);border-bottom:1.3px solid var(--line);text-align:center}
+table.items th:first-child,table.items td:first-child{border-left:0}
+table.items td{border-left:1.3px solid var(--line);border-bottom:1px dashed #9a9a9a;height:24px;padding:0 4px}
+table.items tr:last-child td{border-bottom:0}
+.c-model{width:54%}.c-qty{width:11%}.c-price{width:17.5%}.c-total{width:17.5%}
+.cell{width:100%;border:0;background:transparent;font:inherit;font-size:11px;color:#103a8a;padding:2px 1px;outline:none}
+.cell:focus{background:#eef5ff}
+.num{text-align:right}
+.qty{text-align:center}
+.tot{text-align:right;color:#103a8a;font-size:11px;white-space:nowrap;overflow:hidden}
+
+.bottom{display:grid;grid-template-columns:1fr 196px;gap:0 14px;margin-top:0}
+.notes{font-size:7.8px;line-height:1.5;padding-top:22px;color:#333}
+.stamp{display:flex;justify-content:flex-end;padding-right:6px;font-size:9px;font-weight:600;margin-top:2px}
+.totals{border:1.3px solid var(--line);border-top:0;font-size:11px}
+.totals .r{display:grid;grid-template-columns:96px 1fr;border-top:1.3px solid var(--line);height:22px}
+.totals .r > div{display:flex;align-items:center;padding:0 5px}
+.totals .r > div:first-child{font-weight:700;border-right:1.3px solid var(--line)}
+.totals .v{justify-content:flex-end;color:#103a8a;white-space:nowrap}
+.totals .r.big > div:first-child{font-size:11.5px}
+.totals .r.big .v{font-weight:700}
+.disc{width:100%;border:0;background:transparent;font:inherit;font-size:11px;color:#103a8a;text-align:right;outline:none}
+.disc:focus{background:#eef5ff}
+.hint{font-size:11px;color:#5b636c;text-align:center;margin:14px auto 0;max-width:700px;line-height:1.5}
+
+/* Snapshot (PDF) mode: inputs replaced with spans */
+.snap .val{display:inline-block;min-height:1.2em}
+.snap .fi.val{border-bottom:1px dotted #777}
+.offscreen{position:absolute;left:-12000px;top:0}
+
+@media print{
+  @page{size:A5;margin:0}
+  body{background:#fff}
+  .bar,.hint{display:none}
+  .stage{padding:0}
+  .scaler{transform:none!important}
+  .sheet{box-shadow:none;zoom:.79}
+  .fi:focus,.cell:focus,.disc:focus{background:transparent}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="bar" role="toolbar" aria-label="Form işlemleri">
+  <div class="grp">
+    <label for="noInput">Sipariş No</label>
+    <input id="noInput" class="noin" inputmode="numeric" aria-describedby="noHelp">
+  </div>
+  <div class="grp">
+    <label for="kdvSel">KDV</label>
+    <select id="kdvSel">
+      <option value="20">%20</option>
+      <option value="10">%10</option>
+      <option value="1">%1</option>
+      <option value="0">Yok</option>
+    </select>
+  </div>
+  <div class="spacer"></div>
+  <span id="status" class="status" aria-live="polite"></span>
+  <button class="btn" id="newBtn" type="button">Yeni form</button>
+  <button class="btn primary" id="pdfBtn" type="button">PDF indir</button>
+</div>
+
+<div class="stage" id="stage">
+  <div class="scaler" id="scaler">
+    <div class="sheet" id="sheet">
+      <div class="top">
+        <div>
+          <div class="logo">Ledolet</div>
+          <div class="company" id="companyLine"></div>
+        </div>
+        <div class="no"><small>№</small><span id="noText">00000</span></div>
+        <div class="title">
+          <h1>SİPARİŞ SÖZLEŞMESİ</h1>
+          <div class="sd"><span>Sipariş Tarihi:</span><input class="fi" data-f="siparisTarihi" style="width:92px;flex:none;text-align:center"></div>
+        </div>
+      </div>
+
+      <div class="fields">
+        <div class="frow"><div class="f grow"><span class="l">Ünvanı :</span><input class="fi" data-f="unvan"></div></div>
+        <div class="frow"><div class="f grow"><span class="l">Adresi :</span><input class="fi" data-f="adres"></div></div>
+        <div class="frow">
+          <div class="f" style="flex:1.1"><span class="l">Yetkili :</span><input class="fi" data-f="yetkili"></div>
+          <div class="f" style="flex:1.1"><span class="l">Mail :</span><input class="fi" data-f="mail"></div>
+          <div class="f" style="flex:1"><span class="l">Tel / Faks :</span><input class="fi" data-f="tel"></div>
+          <div class="f" style="flex:.9"><span class="l">Gsm :</span><input class="fi" data-f="gsm"></div>
+        </div>
+        <div class="frow">
+          <div class="f" style="flex:1"><span class="l">Teslim Tarihi :</span><input class="fi" data-f="teslimTarihi"></div>
+          <div class="f" style="flex:1"><span class="l">Teslim Yeri :</span><input class="fi" data-f="teslimYeri"></div>
+          <div class="f" style="flex:1"><span class="l">Sevk Şekli :</span><input class="fi" data-f="sevk"></div>
+          <div class="f" style="flex:1"><span class="l">Ambar Adı :</span><input class="fi" data-f="ambar"></div>
+        </div>
+        <div class="frow">
+          <div class="f" style="flex:1"><span class="l">V.D.:</span><input class="fi" data-f="vd"></div>
+          <div class="f" style="flex:1"><span class="l">V.No:</span><input class="fi" data-f="vno"></div>
+          <div class="f" style="flex:1.1"><span class="l">Ödeme Şekli:</span><input class="fi" data-f="odeme"></div>
+        </div>
+      </div>
+
+      <h2 class="urun">ÜRÜN BİLGİLERİ</h2>
+      <table class="items" aria-label="Ürün satırları">
+        <colgroup><col class="c-model"><col class="c-qty"><col class="c-price"><col class="c-total"></colgroup>
+        <thead><tr><th>Cinsi</th><th>Miktarı</th><th>Birim Fiyatı</th><th>TUTARI</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+
+      <div class="bottom">
+        <div>
+          <div class="notes">
+            1- Firma / Kişi adına yetkilinin teyidi alınmadan üretime başlanmaz,<br>
+            ürün teslim edilmez. Müşteri hatalarından sorumlu değildir.<br>
+            2- Fiyatlarımıza K.D.V. dahil değildir.
+          </div>
+          <div class="stamp">Firma Yetkilisi Kaşesi</div>
+        </div>
+        <div class="totals">
+          <div class="r"><div>Ara Toplam</div><div class="v" id="tAra"></div></div>
+          <div class="r"><div>İskonto</div><div class="v"><input class="disc" id="disc" placeholder="" aria-label="İskonto (tutar veya %)"></div></div>
+          <div class="r"><div>Toplam</div><div class="v" id="tTop"></div></div>
+          <div class="r"><div id="kdvLabel">K.D.V.</div><div class="v" id="tKdv"></div></div>
+          <div class="r big"><div>Genel Toplam</div><div class="v" id="tGen"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<p class="hint" id="noHelp">Fiyatları 1250 veya 1.250,50 şeklinde yazabilirsiniz. İskonto alanına tutar ya da %10 gibi oran girilebilir. Sipariş numarası PDF indirildiğinde kullanılmış sayılır; “Yeni form” bir sonraki numarayla boş bir sayfa açar.</p>
+
+<script>
+(function(){
+"use strict";
+
+/* ---- Firma bilgileri (gerekirse buradan düzeltin) ---- */
+const COMPANY = {
+  address: "Parseller Mahallesi Abdullah Azam Caddesi No:9 Ümraniye - İST.",
+  tel: "0531 345 01 31",
+  mail: "info@ledolet.com"
+};
+const ROW_COUNT = 20;
+const DRAFT_KEY = "ledolet-siparis-draft-v1";
+const COUNTER_KEY = "ledolet-siparis-last-no";
+
+const $ = s => document.querySelector(s);
+const sheet = $("#sheet"), rowsEl = $("#rows"), noInput = $("#noInput"), noText = $("#noText");
+const kdvSel = $("#kdvSel"), disc = $("#disc"), statusEl = $("#status");
+$("#companyLine").innerHTML = escapeHtml(COMPANY.address) + "<br>Tel.: " + escapeHtml(COMPANY.tel) + " / Mail.: " + escapeHtml(COMPANY.mail);
+
+function escapeHtml(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+const pad = n => String(n).padStart(5,"0");
+const fmt = n => n.toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2});
+
+/* Türkçe/İngilizce sayı girişini çöz: 1.250,50 · 1250,5 · 1250.5 · 1.250 */
+function parseNum(v){
+  if(v==null) return NaN;
+  let s = String(v).trim().replace(/\s|₺|tl/gi,"");
+  if(!s) return NaN;
+  if(s.includes(",")){ s = s.replace(/\./g,"").replace(",","."); }
+  else if(/^\d{1,3}(\.\d{3})+$/.test(s)){ s = s.replace(/\./g,""); }
+  const n = Number(s);
+  return isFinite(n) ? n : NaN;
+}
+
+/* ---- Satırları oluştur ---- */
+for(let i=0;i<ROW_COUNT;i++){
+  const tr = document.createElement("tr");
+  tr.innerHTML =
+    '<td><input class="cell" data-r="'+i+'" data-k="model" aria-label="Satır '+(i+1)+' model"></td>'+
+    '<td><input class="cell qty" data-r="'+i+'" data-k="qty" inputmode="decimal" aria-label="Satır '+(i+1)+' miktar"></td>'+
+    '<td><input class="cell num" data-r="'+i+'" data-k="price" inputmode="decimal" aria-label="Satır '+(i+1)+' birim fiyat"></td>'+
+    '<td class="tot" data-tot="'+i+'"></td>';
+  rowsEl.appendChild(tr);
+}
+
+/* ---- Hesaplama ---- */
+function recalc(){
+  let ara = 0;
+  for(let i=0;i<ROW_COUNT;i++){
+    const q = parseNum(sheet.querySelector('[data-r="'+i+'"][data-k="qty"]').value);
+    const p = parseNum(sheet.querySelector('[data-r="'+i+'"][data-k="price"]').value);
+    const cell = sheet.querySelector('[data-tot="'+i+'"]');
+    if(!isNaN(q) && !isNaN(p)){ const t = q*p; ara += t; cell.textContent = fmt(t); }
+    else cell.textContent = "";
+  }
+  let isk = 0; const dv = disc.value.trim();
+  if(dv){
+    if(dv.includes("%")){ const r = parseNum(dv.replace("%","")); if(!isNaN(r)) isk = ara*r/100; }
+    else { const a = parseNum(dv); if(!isNaN(a)) isk = a; }
+  }
+  const top = ara - isk;
+  const rate = Number(kdvSel.value);
+  const kdv = top*rate/100;
+  const any = ara !== 0;
+  $("#tAra").textContent = any ? fmt(ara) : "";
+  $("#tTop").textContent = any ? fmt(top) : "";
+  $("#kdvLabel").textContent = rate ? "K.D.V. (%"+rate+")" : "K.D.V.";
+  $("#tKdv").textContent = any ? fmt(kdv) : "";
+  $("#tGen").textContent = any ? fmt(top+kdv) : "";
+}
+
+/* ---- Taslak (bu tarayıcıda) ---- */
+let currentNo = 0, manualNo = false, claimedNo = null, lastNo = 0;
+function collect(){
+  const fields = {}; sheet.querySelectorAll(".fi[data-f]").forEach(el=>fields[el.dataset.f]=el.value);
+  const rows = []; for(let i=0;i<ROW_COUNT;i++){
+    const g = k => sheet.querySelector('[data-r="'+i+'"][data-k="'+k+'"]').value;
+    rows.push({model:g("model"),qty:g("qty"),price:g("price")});
+  }
+  return {fields, rows, disc:disc.value, kdv:kdvSel.value, no:currentNo, manualNo, claimedNo};
+}
+function apply(d){
+  sheet.querySelectorAll(".fi[data-f]").forEach(el=>el.value=(d.fields&&d.fields[el.dataset.f])||"");
+  for(let i=0;i<ROW_COUNT;i++){
+    const r = (d.rows&&d.rows[i])||{};
+    ["model","qty","price"].forEach(k=>sheet.querySelector('[data-r="'+i+'"][data-k="'+k+'"]').value=r[k]||"");
+  }
+  disc.value = d.disc||""; kdvSel.value = d.kdv||"20";
+}
+let saveT;
+function saveDraft(){ clearTimeout(saveT); saveT = setTimeout(()=>{ try{localStorage.setItem(DRAFT_KEY,JSON.stringify(collect()))}catch(e){} },300); }
+function today(){ const d=new Date(); return String(d.getDate()).padStart(2,"0")+"."+String(d.getMonth()+1).padStart(2,"0")+"."+d.getFullYear(); }
+
+function setNo(n){ currentNo = n; noText.textContent = pad(n); if(document.activeElement!==noInput) noInput.value = pad(n); }
+
+sheet.addEventListener("input", e=>{
+  if(e.target.matches("input")){
+    if(e.target.dataset.k==="qty"||e.target.dataset.k==="price"||e.target===disc) recalc();
+    saveDraft();
+  }
+});
+kdvSel.addEventListener("change", ()=>{recalc();saveDraft();});
+noInput.addEventListener("input", ()=>{
+  const n = parseInt(noInput.value.replace(/\D/g,""),10);
+  if(n>0){ manualNo = true; claimedNo = null; currentNo = n; noText.textContent = pad(n); saveDraft(); }
+});
+noInput.addEventListener("blur", ()=>{ noInput.value = pad(currentNo); });
+
+// Enter → sonraki hücre
+sheet.addEventListener("keydown", e=>{
+  if(e.key==="Enter" && e.target.matches("input")){
+    e.preventDefault();
+    const all = [...sheet.querySelectorAll("input")];
+    const i = all.indexOf(e.target); if(all[i+1]) all[i+1].focus();
+  }
+});
+
+/* ---- Sayaç (bu tarayıcıda saklanır) ---- */
+function localLast(){ try{ return parseInt(localStorage.getItem(COUNTER_KEY)||"0",10)||0 }catch(e){ return 0 } }
+function setLocalLast(n){ try{ localStorage.setItem(COUNTER_KEY,String(n)) }catch(e){} }
+
+function onLast(n){
+  lastNo = n;
+  if(!manualNo && claimedNo===null && currentNo <= lastNo) setNo(lastNo+1);
+}
+
+async function claimNumber(){
+  if(claimedNo!==null && claimedNo===currentNo) return currentNo; // aynı form tekrar indiriliyor
+  let n = currentNo;
+  const last = localLast();
+  if(!manualNo && n <= last) n = last+1;
+  setLocalLast(Math.max(last,n)); lastNo = Math.max(last,n);
+  setNo(n); claimedNo = n; saveDraft();
+  return n;
+}
+
+/* ---- PDF ---- */
+function buildSnapshot(){
+  const clone = sheet.cloneNode(true);
+  clone.removeAttribute("id"); clone.classList.add("snap");
+  const src = sheet.querySelectorAll("input"), dst = clone.querySelectorAll("input");
+  dst.forEach((inp,i)=>{
+    const span = document.createElement("span");
+    span.className = inp.className + " val";
+    span.setAttribute("style", inp.getAttribute("style")||"");
+    span.textContent = src[i].value;
+    inp.replaceWith(span);
+  });
+  const box = document.createElement("div"); box.className = "offscreen"; box.appendChild(clone);
+  document.body.appendChild(box);
+  return box;
+}
+
+async function makePdf(){
+  if(document.fonts && document.fonts.ready) await document.fonts.ready;
+  const box = buildSnapshot();
+  try{
+    const canvas = await html2canvas(box.firstChild,{scale:3,backgroundColor:"#ffffff",logging:false,windowWidth:1400});
+    const img = canvas.toDataURL("image/jpeg",0.92);
+    const pdf = new window.jspdf.jsPDF({unit:"mm",format:"a5",orientation:"portrait"});
+    pdf.addImage(img,"JPEG",0,0,148,210);
+    return pdf;
+  } finally { box.remove(); }
+}
+function fileName(no){
+  const u = (sheet.querySelector('[data-f="unvan"]').value||"").trim().replace(/[\\/:*?"<>|]+/g,"").replace(/\s+/g,"_").slice(0,40);
+  return "Siparis_"+pad(no)+(u?"_"+u:"")+".pdf";
+}
+function setStatus(msg,cls){ statusEl.textContent = msg; statusEl.className = "status"+(cls?" "+cls:""); }
+
+const pdfBtn = $("#pdfBtn");
+pdfBtn.addEventListener("click", async ()=>{
+  pdfBtn.disabled = true; setStatus("PDF hazırlanıyor…");
+  try{
+    const no = await claimNumber();
+    if(!window.html2canvas || !window.jspdf){
+      setStatus("Yazdır penceresinde “PDF olarak kaydet”i seçin.");
+      window.print(); return;
+    }
+    const pdf = await makePdf();
+    pdf.save(fileName(no));
+    setStatus("№ "+pad(no)+" indirildi.","ok");
+  }catch(e){
+    console.error(e); setStatus("PDF oluşturulamadı; yazdır penceresi açılıyor.","err"); window.print();
+  }finally{ pdfBtn.disabled = false; }
+});
+
+$("#newBtn").addEventListener("click", ()=>{
+  const hasData = collect().rows.some(r=>r.model||r.qty||r.price) || (sheet.querySelector('[data-f="unvan"]').value||"").trim();
+  if(hasData && claimedNo===null && !confirm("Bu form henüz indirilmedi. Yine de temizlensin mi?")) return;
+  apply({kdv:kdvSel.value});
+  sheet.querySelector('[data-f="siparisTarihi"]').value = today();
+  manualNo = false; claimedNo = null;
+  const base = Math.max(lastNo, localLast());
+  setNo(base+1); recalc(); saveDraft(); setStatus("");
+  sheet.querySelector('[data-f="unvan"]').focus();
+});
+
+/* ---- Ekrana sığdır ---- */
+function fit(){
+  const avail = document.getElementById("stage").clientWidth - 24;
+  const s = Math.min(1, avail/700);
+  const sc = document.getElementById("scaler");
+  sc.style.transform = s<1 ? "scale("+s+")" : "";
+  sc.style.width = (700*s)+"px"; sc.style.height = (990*s)+"px";
+}
+window.addEventListener("resize", fit);
+
+/* ---- Başlat ---- */
+let draft = null; try{ draft = JSON.parse(localStorage.getItem(DRAFT_KEY)||"null") }catch(e){}
+if(draft){ apply(draft); manualNo = !!draft.manualNo; claimedNo = draft.claimedNo ?? null; setNo(draft.no||1); }
+else { sheet.querySelector('[data-f="siparisTarihi"]').value = today(); setNo(1); }
+onLast(localLast());
+recalc(); fit();
+
+})();
+</script>
+</body>
+</html>
